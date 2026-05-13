@@ -1,10 +1,3 @@
-두 가지 문제가 보입니다.
-
-1. 카드가 뒤집혀서 시작됨 — 앞면이 아니라 뒷면이 먼저 보임
-2. 🔊 버튼이 안 보임
-
-원인은 카드가 처음부터 뒷면 상태로 렌더링되고 있는 것입니다. `renderCard` 초기화 문제입니다. 수정된 코드 올립니다.
-
 ```html
 <!DOCTYPE html>
 <html lang="ko">
@@ -13,58 +6,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>세계관 영어 플래시카드</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f9f7; color: #222; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem; }
-h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter-spacing: 0.04em; }
-.progress { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-bottom: 1.2rem; max-width: 420px; }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: #ddd; transition: background 0.3s; }
-.dot.current { background: #aaa; } .dot.done { background: #1D9E75; } .dot.ok { background: #378ADD; } .dot.hard { background: #E24B4A; }
-.meta { font-size: 12px; color: #bbb; text-align: center; margin-bottom: 0.4rem; }
-.section-label { font-size: 11px; color: #bbb; text-align: center; margin-bottom: 1rem; letter-spacing: 0.05em; }
-.card-area { perspective: 1000px; width: 100%; max-width: 420px; margin-bottom: 1rem; }
-.card { width: 100%; min-height: 230px; position: relative; transform-style: preserve-3d; cursor: pointer; }
-.front, .back { position: absolute; width: 100%; min-height: 230px; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid #e8e8e8; border-radius: 16px; padding: 1.6rem 1.4rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.back { transform: rotateY(180deg); }
-.tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 0.8rem; }
-.tag { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
-.tag.hard { background: #FCEBEB; color: #A32D2D; } .tag.ok { background: #E6F1FB; color: #185FA5; } .tag.new { background: #FFF3E0; color: #A45F00; } .tag.pos { background: #F0F0F0; color: #555; } .tag.vi { background: #E8F5E9; color: #2E7D32; } .tag.vt { background: #EDE7F6; color: #4527A0; } .tag.vi-vt { background: #E3F2FD; color: #0D47A1; }
-.word { font-size: 28px; font-weight: 500; color: #111; margin-bottom: 4px; text-align: center; }
-.phonetic { font-size: 13px; color: #aaa; margin-bottom: 6px; }
-.def-ko { font-size: 16px; font-weight: 600; color: #111; text-align: center; margin-bottom: 4px; }
-.def-en { font-size: 12px; color: #888; text-align: center; font-style: italic; margin-bottom: 8px; line-height: 1.5; max-width: 320px; }
-.example { font-size: 12px; color: #777; border-left: 2px solid #e0e0e0; padding-left: 10px; max-width: 320px; line-height: 1.8; text-align: left; }
-.example .ko { color: #bbb; }
-.btns { display: flex; gap: 8px; justify-content: center; width: 100%; max-width: 420px; margin-bottom: 1rem; }
-.btns button { flex: 1; padding: 10px 6px; border-radius: 10px; border: 1px solid #e0e0e0; background: #fff; font-size: 13px; cursor: pointer; transition: all 0.15s; color: #444; }
-.btns button:hover { background: #f5f5f5; }
-.btn-prev { max-width: 60px !important; color: #aaa !important; font-size: 16px !important; }
-.btn-hard { border-color: #E24B4A !important; color: #E24B4A !important; }
-.btn-done { border-color: #1D9E75 !important; color: #1D9E75 !important; }
-.stats { display: flex; gap: 8px; justify-content: center; margin-top: 0.5rem; }
-.stat { text-align: center; padding: 0.6rem 1rem; border-radius: 10px; background: #fff; border: 1px solid #eee; min-width: 75px; }
-.stat-num { font-size: 20px; font-weight: 500; }
-.stat-label { font-size: 10px; color: #bbb; margin-top: 2px; }
-.flip-hint { font-size: 11px; color: #ddd; text-align: center; margin-bottom: 0.8rem; }
-.btn-audio { background: none; border: none; cursor: pointer; font-size: 18px; padding: 2px 4px; color: #bbb; transition: color 0.15s; vertical-align: middle; }
-.btn-audio:hover { color: #378ADD; }
-.btn-audio.playing { color: #378ADD; }
-.card-flip { transition: transform 0.4s cubic-bezier(.4,0,.2,1); transform-style: preserve-3d; }
-.card-flip.flipped { transform: rotateY(180deg); }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9f9f7;color:#222;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem}
+h2{font-size:14px;font-weight:500;color:#999;margin-bottom:1rem;letter-spacing:.04em}
+.progress{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:1.2rem;max-width:420px}
+.dot{width:9px;height:9px;border-radius:50%;background:#ddd}
+.dot.current{background:#aaa}.dot.done{background:#1D9E75}.dot.ok{background:#378ADD}.dot.hard{background:#E24B4A}
+.section-label{font-size:11px;color:#bbb;text-align:center;margin-bottom:.5rem}
+.counter{font-size:12px;color:#bbb;text-align:center;margin-bottom:1rem}
+.card-area{perspective:1000px;width:100%;max-width:420px;margin-bottom:1rem}
+.card{width:100%;min-height:230px;position:relative;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card.flipped{transform:rotateY(180deg)}
+.face{position:absolute;width:100%;min-height:230px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid #e8e8e8;border-radius:16px;padding:1.6rem 1.4rem;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.back{transform:rotateY(180deg)}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:.8rem}
+.tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.tag.hard{background:#FCEBEB;color:#A32D2D}.tag.ok{background:#E6F1FB;color:#185FA5}.tag.new{background:#FFF3E0;color:#A45F00}
+.tag.pos{background:#F0F0F0;color:#555}.tag.vi{background:#E8F5E9;color:#2E7D32}.tag.vt{background:#EDE7F6;color:#4527A0}.tag.vi-vt{background:#E3F2FD;color:#0D47A1}
+.word{font-size:28px;font-weight:500;color:#111;margin-bottom:4px;text-align:center}
+.phonetic{font-size:13px;color:#aaa;margin-bottom:4px}
+.def-ko{font-size:16px;font-weight:600;color:#111;text-align:center;margin-bottom:4px}
+.def-en{font-size:12px;color:#888;text-align:center;font-style:italic;margin-bottom:8px;line-height:1.5;max-width:320px}
+.example{font-size:12px;color:#777;border-left:2px solid #e0e0e0;padding-left:10px;max-width:320px;line-height:1.8;text-align:left}
+.example .ko{color:#bbb}
+.btn-audio{background:none;border:none;cursor:pointer;font-size:16px;color:#bbb;padding:2px 4px;vertical-align:middle}
+.btn-audio:hover,.btn-audio.playing{color:#378ADD}
+.flip-hint{font-size:11px;color:#ddd;text-align:center;margin-bottom:.8rem}
+.btns{display:flex;gap:8px;justify-content:center;width:100%;max-width:420px;margin-bottom:1rem}
+.btns button{flex:1;padding:10px 6px;border-radius:10px;border:1px solid #e0e0e0;background:#fff;font-size:13px;cursor:pointer;color:#444}
+.btns button:hover{background:#f5f5f5}
+.btn-prev{max-width:60px!important;color:#aaa!important;font-size:16px!important}
+.btn-hard{border-color:#E24B4A!important;color:#E24B4A!important}
+.btn-done{border-color:#1D9E75!important;color:#1D9E75!important}
+.stats{display:flex;gap:8px;justify-content:center;margin-top:.5rem}
+.stat{text-align:center;padding:.6rem 1rem;border-radius:10px;background:#fff;border:1px solid #eee;min-width:75px}
+.stat-num{font-size:20px;font-weight:500}
+.stat-label{font-size:10px;color:#bbb;margin-top:2px}
 </style>
 </head>
 <body>
 <h2>📚 세계관 영어 플래시카드</h2>
 <div class="progress" id="progress"></div>
-<div class="section-label" id="section-label"></div>
-<div class="meta" id="counter"></div>
+<div class="section-label" id="slabel"></div>
+<div class="counter" id="counter"></div>
 <div class="card-area">
-  <div class="card card-flip" id="card" onclick="flip()">
-    <div class="front" id="front"></div>
-    <div class="back" id="back"></div>
+  <div class="card" id="card" onclick="flip()">
+    <div class="face front" id="front"></div>
+    <div class="face back" id="back"></div>
   </div>
 </div>
 <div class="flip-hint">카드를 눌러 뜻 확인 · 다시 누르면 앞면으로</div>
-<div class="btns" id="btns" style="display:none;">
+<div class="btns" id="btns" style="display:none">
   <button class="btn-prev" onclick="prev(event)">←</button>
   <button class="btn-hard" onclick="mark('hard')">복습 필요</button>
   <button onclick="mark('ok')">애매</button>
@@ -77,156 +69,114 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 </div>
 <script src="data.js"></script>
 <script>
-let idx=0, results=cards.map(c=>c.status), flipped=false, counts={done:0,ok:0,hard:0};
+let idx=0,results=cards.map(c=>c.status),flipped=false,counts={done:0,ok:0,hard:0};
 
-function posTagHTML(c){
-  let h='<div class="tags">';
-  if(c.status==='hard') h+='<span class="tag hard">복습 필요</span>';
-  else if(c.status==='ok') h+='<span class="tag ok">애매</span>';
-  else h+='<span class="tag new">신규</span>';
-  h+='<span class="tag pos">'+c.pos+'</span>';
-  if(c.vtype==='vi') h+='<span class="tag vi">자동사</span>';
-  else if(c.vtype==='vt') h+='<span class="tag vt">타동사</span>';
-  else if(c.vtype==='vi/vt') h+='<span class="tag vi-vt">자·타동사</span>';
-  return h+'</div>';
+function tags(c){
+  const s=c.status==='hard'?'hard':c.status==='ok'?'ok':'new';
+  const sl=c.status==='hard'?'복습 필요':c.status==='ok'?'애매':'신규';
+  const vt=c.vtype==='vi'?'<span class="tag vi">자동사</span>':c.vtype==='vt'?'<span class="tag vt">타동사</span>':c.vtype==='vi/vt'?'<span class="tag vi-vt">자·타동사</span>':'';
+  return `<div class="tags"><span class="tag ${s}">${sl}</span><span class="tag pos">${c.pos}</span>${vt}</div>`;
 }
 
-function renderDots(){
+function speak(text,id){
+  if(!window.speechSynthesis)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.rate=0.9;
+  const b=document.getElementById(id);
+  if(b){b.classList.add('playing');u.onend=()=>b.classList.remove('playing');}
+  speechSynthesis.speak(u);
+}
+
+function dots(){
   const p=document.getElementById('progress');
   p.innerHTML='';
   cards.forEach((_,i)=>{
     const d=document.createElement('div');
-    d.className='dot';
-    if(i===idx) d.classList.add('current');
-    else if(results[i]==='done') d.classList.add('done');
-    else if(results[i]==='hard') d.classList.add('hard');
-    else if(results[i]==='ok') d.classList.add('ok');
+    d.className='dot'+(i===idx?' current':results[i]==='done'?' done':results[i]==='hard'?' hard':results[i]==='ok'?' ok':'');
     p.appendChild(d);
   });
 }
 
-function speak(text, btnId){
-  if(!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang='en-US'; u.rate=0.9;
-  const btn=document.getElementById(btnId);
-  if(btn){ btn.classList.add('playing'); u.onend=()=>btn.classList.remove('playing'); }
-  window.speechSynthesis.speak(u);
-}
-
-function renderCard(){
-  if(idx>=cards.length){ showComplete(); return; }
-  const cardEl=document.getElementById('card');
-  // 즉시 앞면으로 리셋 (transition 없이)
-  cardEl.classList.remove('card-flip');
-  cardEl.classList.remove('flipped');
-  void cardEl.offsetWidth; // reflow
-  cardEl.classList.add('card-flip');
+function render(){
+  if(idx>=cards.length){complete();return;}
+  const el=document.getElementById('card');
+  el.style.transition='none';
+  el.classList.remove('flipped');
   flipped=false;
   document.getElementById('btns').style.display='none';
-
+  el.offsetWidth;
+  el.style.transition='';
   const c=cards[idx];
-  const exParts=c.ex.split('\n');
-  const exEn=exParts[0]||'';
-  const exKo=exParts[1]||'';
-
+  const [en,ko]=(c.ex||'').split('\n');
   document.getElementById('counter').textContent=(idx+1)+' / '+cards.length;
-  document.getElementById('section-label').textContent=
-    c.status==='hard'?'복습 필요 — 집중 구간':
-    c.status==='ok'?'애매 — 확인 구간':'신규';
-
-  document.getElementById('front').innerHTML=
-    posTagHTML(c)+
-    '<div class="word">'+c.word+'</div>'+
-    '<div class="phonetic">'+c.phonetic+'</div>'+
-    '<button id="aud-word" class="btn-audio" onclick="event.stopPropagation();speak(\''+c.word+'\',\'aud-word\')">🔊</button>';
-
-  document.getElementById('back').innerHTML=
-    posTagHTML(c)+
-    '<div class="def-ko">'+c.def+'</div>'+
-    '<div class="def-en">'+c.enDef+'</div>'+
-    '<div class="example">'+
-      exEn+' <button id="aud-ex" class="btn-audio" onclick="event.stopPropagation();speak(this.dataset.text,\'aud-ex\')" data-text="'+exEn.replace(/"/g,'&quot;')+'">🔊</button>'+
-      '<br><span class="ko">'+exKo+'</span>'+
-    '</div>';
-
-  renderDots();
+  document.getElementById('slabel').textContent=c.status==='hard'?'복습 필요 — 집중 구간':c.status==='ok'?'애매 — 확인 구간':'신규';
+  document.getElementById('front').innerHTML=tags(c)+
+    `<div class="word">${c.word}</div><div class="phonetic">${c.phonetic}</div>`+
+    `<button id="a1" class="btn-audio" onclick="event.stopPropagation();speak('${c.word}','a1')">🔊</button>`;
+  document.getElementById('back').innerHTML=tags(c)+
+    `<div class="def-ko">${c.def}</div><div class="def-en">${c.enDef}</div>`+
+    `<div class="example">${en} <button id="a2" class="btn-audio" onclick="event.stopPropagation();speak(this.dataset.t,'a2')" data-t="${(en||'').replace(/'/g,'&#39;')}">🔊</button><br><span class="ko">${ko||''}</span></div>`;
+  dots();
 }
 
 function flip(){
-  const cardEl=document.getElementById('card');
   flipped=!flipped;
-  if(flipped){
-    cardEl.classList.add('flipped');
-    document.getElementById('btns').style.display='flex';
-  } else {
-    cardEl.classList.remove('flipped');
-    document.getElementById('btns').style.display='none';
-  }
+  document.getElementById('card').classList.toggle('flipped',flipped);
+  document.getElementById('btns').style.display=flipped?'flex':'none';
 }
 
 function prev(e){
-  if(e) e.stopPropagation();
-  if(idx===0) return;
+  e&&e.stopPropagation();
+  if(!idx)return;
   const pr=results[idx-1];
-  if(pr && pr!==cards[idx-1].status){ counts[pr]=Math.max(0,counts[pr]-1); updateStats(); }
+  if(pr&&pr!==cards[idx-1].status){counts[pr]=Math.max(0,counts[pr]-1);stat();}
   results[idx-1]=cards[idx-1].status;
-  idx--;
-  renderCard();
+  idx--;render();
 }
 
-function mark(type){
-  results[idx]=type;
-  counts[type]++;
-  updateStats();
-  idx++;
-  renderCard();
-}
+function mark(t){results[idx]=t;counts[t]++;stat();idx++;render();}
 
-function updateStats(){
+function stat(){
   document.getElementById('s-done').textContent=counts.done;
   document.getElementById('s-ok').textContent=counts.ok;
   document.getElementById('s-hard').textContent=counts.hard;
 }
 
-function showComplete(){
+function complete(){
   document.getElementById('card').style.display='none';
   document.getElementById('btns').style.display='none';
-  document.getElementById('section-label').textContent='';
+  document.getElementById('slabel').textContent='';
   document.getElementById('counter').textContent='';
   document.querySelector('.flip-hint').textContent='';
-  renderDots();
-  const doneW=cards.filter((_,i)=>results[i]==='done').map(c=>c.word);
-  const okW=cards.filter((_,i)=>results[i]==='ok').map(c=>c.word);
-  const hardW=cards.filter((_,i)=>results[i]==='hard').map(c=>c.word);
+  dots();
+  const dW=cards.filter((_,i)=>results[i]==='done').map(c=>c.word);
+  const oW=cards.filter((_,i)=>results[i]==='ok').map(c=>c.word);
+  const hW=cards.filter((_,i)=>results[i]==='hard').map(c=>c.word);
+  window._r=`플래시카드 결과 — 암기완료:${counts.done}개(${dW.join(',')||'없음'}) / 애매:${counts.ok}개(${oW.join(',')||'없음'}) / 복습필요:${counts.hard}개(${hW.join(',')||'없음'})`;
   const s=document.createElement('div');
-  s.style.cssText='width:100%;max-width:420px;background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:1.6rem 1.4rem;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:1rem;';
+  s.style.cssText='width:100%;max-width:420px;background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:1.6rem 1.4rem;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:1rem';
   s.innerHTML=
-    '<div style="font-size:15px;font-weight:600;text-align:center;margin-bottom:1.2rem;">세션 완료 ✓</div>'+
-    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:1.2rem;">'+
-      '<div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#F0FBF6;"><div style="font-size:22px;font-weight:600;color:#1D9E75;">'+counts.done+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">암기 완료</div></div>'+
-      '<div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#EBF3FD;"><div style="font-size:22px;font-weight:600;color:#378ADD;">'+counts.ok+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">애매</div></div>'+
-      '<div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#FEF0F0;"><div style="font-size:22px;font-weight:600;color:#E24B4A;">'+counts.hard+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">복습 필요</div></div>'+
+    '<div style="font-size:15px;font-weight:600;text-align:center;margin-bottom:1.2rem">세션 완료 ✓</div>'+
+    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:1.2rem">'+
+      `<div style="flex:1;text-align:center;padding:.7rem;border-radius:10px;background:#F0FBF6"><div style="font-size:22px;font-weight:600;color:#1D9E75">${counts.done}</div><div style="font-size:10px;color:#aaa;margin-top:2px">암기 완료</div></div>`+
+      `<div style="flex:1;text-align:center;padding:.7rem;border-radius:10px;background:#EBF3FD"><div style="font-size:22px;font-weight:600;color:#378ADD">${counts.ok}</div><div style="font-size:10px;color:#aaa;margin-top:2px">애매</div></div>`+
+      `<div style="flex:1;text-align:center;padding:.7rem;border-radius:10px;background:#FEF0F0"><div style="font-size:22px;font-weight:600;color:#E24B4A">${counts.hard}</div><div style="font-size:10px;color:#aaa;margin-top:2px">복습 필요</div></div>`+
     '</div>'+
-    (hardW.length?'<div style="margin-bottom:0.6rem;"><span style="font-size:11px;font-weight:600;color:#E24B4A;">복습 필요 </span><span style="font-size:12px;color:#666;">'+hardW.join(', ')+'</span></div>':'')+
-    (okW.length?'<div style="margin-bottom:0.6rem;"><span style="font-size:11px;font-weight:600;color:#378ADD;">애매 </span><span style="font-size:12px;color:#666;">'+okW.join(', ')+'</span></div>':'')+
-    (doneW.length?'<div style="margin-bottom:1.2rem;"><span style="font-size:11px;font-weight:600;color:#1D9E75;">암기 완료 </span><span style="font-size:12px;color:#666;">'+doneW.join(', ')+'</span></div>':'<div style="margin-bottom:1.2rem;"></div>')+
-    '<div style="display:flex;gap:8px;">'+
-      '<button onclick="copyResult()" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:#fff;font-size:13px;color:#666;cursor:pointer;">결과 복사</button>'+
-      '<button onclick="nextStep()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#222;color:#fff;font-size:13px;font-weight:500;cursor:pointer;">다음 단계 →</button>'+
+    (hW.length?`<div style="margin-bottom:.6rem"><span style="font-size:11px;font-weight:600;color:#E24B4A">복습 필요 </span><span style="font-size:12px;color:#666">${hW.join(', ')}</span></div>`:'')+
+    (oW.length?`<div style="margin-bottom:.6rem"><span style="font-size:11px;font-weight:600;color:#378ADD">애매 </span><span style="font-size:12px;color:#666">${oW.join(', ')}</span></div>`:'')+
+    (dW.length?`<div style="margin-bottom:1.2rem"><span style="font-size:11px;font-weight:600;color:#1D9E75">암기 완료 </span><span style="font-size:12px;color:#666">${dW.join(', ')}</span></div>`:'<div style="margin-bottom:1.2rem"></div>')+
+    '<div style="display:flex;gap:8px">'+
+      '<button onclick="navigator.clipboard.writeText(window._r).then(()=>alert(\'복사 완료\'))" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:#fff;font-size:13px;color:#666;cursor:pointer">결과 복사</button>'+
+      '<button onclick="navigator.clipboard.writeText(window._r+\'\\n\\n다음 단계로 넘어가겠습니다.\').then(()=>alert(\'복사 완료\'))" style="flex:1;padding:10px;border-radius:10px;border:none;background:#222;color:#fff;font-size:13px;font-weight:500;cursor:pointer">다음 단계 →</button>'+
     '</div>';
   document.querySelector('.card-area').insertAdjacentElement('afterend',s);
-  window._r='플래시카드 결과 — 암기완료:'+counts.done+'개('+(doneW.join(',')||'없음')+') / 애매:'+counts.ok+'개('+(okW.join(',')||'없음')+') / 복습필요:'+counts.hard+'개('+(hardW.join(',')||'없음')+')';
 }
 
-function copyResult(){ navigator.clipboard.writeText(window._r).then(()=>alert('복사 완료. Claude 채팅창에 붙여넣기 해주세요.')); }
-function nextStep(){ navigator.clipboard.writeText(window._r+'\n\n다음 단계로 넘어가겠습니다.').then(()=>alert('복사 완료. Claude 채팅창에 붙여넣기 해주세요.')).catch(()=>alert('결과: '+window._r)); }
-
-renderCard();
+render();
 </script>
 </body>
 </html>
 ```
 
-GitHub index.html에 붙여넣고 완료되면 알려주세요.
+GitHub에 붙여넣고 완료되면 알려주세요.
