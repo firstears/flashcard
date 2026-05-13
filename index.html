@@ -1,3 +1,10 @@
+두 가지 문제가 보입니다.
+
+1. 카드가 뒤집혀서 시작됨 — 앞면이 아니라 뒷면이 먼저 보임
+2. 🔊 버튼이 안 보임
+
+원인은 카드가 처음부터 뒷면 상태로 렌더링되고 있는 것입니다. `renderCard` 초기화 문제입니다. 수정된 코드 올립니다.
+
 ```html
 <!DOCTYPE html>
 <html lang="ko">
@@ -15,8 +22,7 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 .meta { font-size: 12px; color: #bbb; text-align: center; margin-bottom: 0.4rem; }
 .section-label { font-size: 11px; color: #bbb; text-align: center; margin-bottom: 1rem; letter-spacing: 0.05em; }
 .card-area { perspective: 1000px; width: 100%; max-width: 420px; margin-bottom: 1rem; }
-.card { width: 100%; min-height: 230px; position: relative; transform-style: preserve-3d; transition: transform 0.4s cubic-bezier(.4,0,.2,1); cursor: pointer; }
-.card.flipped { transform: rotateY(180deg); }
+.card { width: 100%; min-height: 230px; position: relative; transform-style: preserve-3d; cursor: pointer; }
 .front, .back { position: absolute; width: 100%; min-height: 230px; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid #e8e8e8; border-radius: 16px; padding: 1.6rem 1.4rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .back { transform: rotateY(180deg); }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 0.8rem; }
@@ -25,8 +31,8 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 .word { font-size: 28px; font-weight: 500; color: #111; margin-bottom: 4px; text-align: center; }
 .phonetic { font-size: 13px; color: #aaa; margin-bottom: 6px; }
 .def-ko { font-size: 16px; font-weight: 600; color: #111; text-align: center; margin-bottom: 4px; }
-.def-en { font-size: 12px; color: #888; text-align: center; font-style: italic; margin-bottom: 6px; line-height: 1.5; max-width: 320px; }
-.example { font-size: 12px; color: #777; border-left: 2px solid #e0e0e0; padding-left: 10px; max-width: 320px; line-height: 1.7; text-align: left; }
+.def-en { font-size: 12px; color: #888; text-align: center; font-style: italic; margin-bottom: 8px; line-height: 1.5; max-width: 320px; }
+.example { font-size: 12px; color: #777; border-left: 2px solid #e0e0e0; padding-left: 10px; max-width: 320px; line-height: 1.8; text-align: left; }
 .example .ko { color: #bbb; }
 .btns { display: flex; gap: 8px; justify-content: center; width: 100%; max-width: 420px; margin-bottom: 1rem; }
 .btns button { flex: 1; padding: 10px 6px; border-radius: 10px; border: 1px solid #e0e0e0; background: #fff; font-size: 13px; cursor: pointer; transition: all 0.15s; color: #444; }
@@ -39,12 +45,11 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 .stat-num { font-size: 20px; font-weight: 500; }
 .stat-label { font-size: 10px; color: #bbb; margin-top: 2px; }
 .flip-hint { font-size: 11px; color: #ddd; text-align: center; margin-bottom: 0.8rem; }
-.loading { font-size: 14px; color: #bbb; margin-top: 3rem; }
-.btn-audio { background: none; border: none; cursor: pointer; font-size: 18px; padding: 2px 6px; color: #aaa; transition: color 0.15s; margin-top: 6px; }
+.btn-audio { background: none; border: none; cursor: pointer; font-size: 18px; padding: 2px 4px; color: #bbb; transition: color 0.15s; vertical-align: middle; }
 .btn-audio:hover { color: #378ADD; }
 .btn-audio.playing { color: #378ADD; }
-.audio-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
-.audio-label { font-size: 11px; color: #ccc; }
+.card-flip { transition: transform 0.4s cubic-bezier(.4,0,.2,1); transform-style: preserve-3d; }
+.card-flip.flipped { transform: rotateY(180deg); }
 </style>
 </head>
 <body>
@@ -53,8 +58,8 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 <div class="section-label" id="section-label"></div>
 <div class="meta" id="counter"></div>
 <div class="card-area">
-  <div class="card" id="card" onclick="flip()">
-    <div class="front" id="front"><div class="loading">카드 불러오는 중...</div></div>
+  <div class="card card-flip" id="card" onclick="flip()">
+    <div class="front" id="front"></div>
     <div class="back" id="back"></div>
   </div>
 </div>
@@ -73,56 +78,155 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 <script src="data.js"></script>
 <script>
 let idx=0, results=cards.map(c=>c.status), flipped=false, counts={done:0,ok:0,hard:0};
-function posTagHTML(c){let h='<div class="tags">';if(c.status==='hard')h+='<span class="tag hard">복습 필요</span>';else if(c.status==='ok')h+='<span class="tag ok">애매</span>';else h+='<span class="tag new">신규</span>';h+='<span class="tag pos">'+c.pos+'</span>';if(c.vtype==='vi')h+='<span class="tag vi">자동사</span>';else if(c.vtype==='vt')h+='<span class="tag vt">타동사</span>';else if(c.vtype==='vi/vt')h+='<span class="tag vi-vt">자·타동사</span>';h+='</div>';return h;}
-function renderDots(){const p=document.getElementById('progress');p.innerHTML='';cards.forEach((_,i)=>{const d=document.createElement('div');d.className='dot';if(i===idx)d.classList.add('current');else if(results[i]==='done')d.classList.add('done');else if(results[i]==='hard')d.classList.add('hard');else if(results[i]==='ok')d.classList.add('ok');p.appendChild(d);});}
+
+function posTagHTML(c){
+  let h='<div class="tags">';
+  if(c.status==='hard') h+='<span class="tag hard">복습 필요</span>';
+  else if(c.status==='ok') h+='<span class="tag ok">애매</span>';
+  else h+='<span class="tag new">신규</span>';
+  h+='<span class="tag pos">'+c.pos+'</span>';
+  if(c.vtype==='vi') h+='<span class="tag vi">자동사</span>';
+  else if(c.vtype==='vt') h+='<span class="tag vt">타동사</span>';
+  else if(c.vtype==='vi/vt') h+='<span class="tag vi-vt">자·타동사</span>';
+  return h+'</div>';
+}
+
+function renderDots(){
+  const p=document.getElementById('progress');
+  p.innerHTML='';
+  cards.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='dot';
+    if(i===idx) d.classList.add('current');
+    else if(results[i]==='done') d.classList.add('done');
+    else if(results[i]==='hard') d.classList.add('hard');
+    else if(results[i]==='ok') d.classList.add('ok');
+    p.appendChild(d);
+  });
+}
+
 function speak(text, btnId){
   if(!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.9;
-  const btn = document.getElementById(btnId);
-  if(btn){ btn.classList.add('playing'); u.onend = ()=>btn.classList.remove('playing'); }
+  u.lang='en-US'; u.rate=0.9;
+  const btn=document.getElementById(btnId);
+  if(btn){ btn.classList.add('playing'); u.onend=()=>btn.classList.remove('playing'); }
   window.speechSynthesis.speak(u);
 }
+
 function renderCard(){
-  if(idx>=cards.length){showComplete();return;}
+  if(idx>=cards.length){ showComplete(); return; }
   const cardEl=document.getElementById('card');
-  cardEl.style.visibility='hidden';
-  cardEl.style.transition='none';
+  // 즉시 앞면으로 리셋 (transition 없이)
+  cardEl.classList.remove('card-flip');
   cardEl.classList.remove('flipped');
+  void cardEl.offsetWidth; // reflow
+  cardEl.classList.add('card-flip');
   flipped=false;
   document.getElementById('btns').style.display='none';
-  requestAnimationFrame(()=>{cardEl.style.transition='';cardEl.style.visibility='visible';});
+
   const c=cards[idx];
+  const exParts=c.ex.split('\n');
+  const exEn=exParts[0]||'';
+  const exKo=exParts[1]||'';
+
   document.getElementById('counter').textContent=(idx+1)+' / '+cards.length;
-  document.getElementById('section-label').textContent=c.status==='hard'?'복습 필요 — 집중 구간':c.status==='ok'?'애매 — 확인 구간':'신규';
-  const exLine = c.ex.split('\n')[0];
+  document.getElementById('section-label').textContent=
+    c.status==='hard'?'복습 필요 — 집중 구간':
+    c.status==='ok'?'애매 — 확인 구간':'신규';
+
   document.getElementById('front').innerHTML=
     posTagHTML(c)+
     '<div class="word">'+c.word+'</div>'+
     '<div class="phonetic">'+c.phonetic+'</div>'+
-    '<button id="audio-word" class="btn-audio" onclick="event.stopPropagation();speak(\''+c.word+'\',\'audio-word\')">🔊</button>';
+    '<button id="aud-word" class="btn-audio" onclick="event.stopPropagation();speak(\''+c.word+'\',\'aud-word\')">🔊</button>';
+
   document.getElementById('back').innerHTML=
     posTagHTML(c)+
     '<div class="def-ko">'+c.def+'</div>'+
     '<div class="def-en">'+c.enDef+'</div>'+
     '<div class="example">'+
-      exLine+'<button id="audio-ex" class="btn-audio" onclick="event.stopPropagation();speak(decodeURIComponent(\''+encodeURIComponent(exLine)+'\'),\'audio-ex\')" style="vertical-align:middle;font-size:14px;">🔊</button>'+
-      '<br><span class="ko">'+(c.ex.split('\n')[1]||'')+'</span>'+
+      exEn+' <button id="aud-ex" class="btn-audio" onclick="event.stopPropagation();speak(this.dataset.text,\'aud-ex\')" data-text="'+exEn.replace(/"/g,'&quot;')+'">🔊</button>'+
+      '<br><span class="ko">'+exKo+'</span>'+
     '</div>';
+
   renderDots();
 }
-function flip(){flipped=!flipped;if(flipped){document.getElementById('card').classList.add('flipped');document.getElementById('btns').style.display='flex';}else{document.getElementById('card').classList.remove('flipped');document.getElementById('btns').style.display='none';}}
-function prev(e){if(e)e.stopPropagation();if(idx===0)return;const pr=results[idx-1];if(pr&&pr!==cards[idx-1].status){counts[pr]=Math.max(0,counts[pr]-1);updateStats();}results[idx-1]=cards[idx-1].status;idx--;renderCard();}
-function mark(type){results[idx]=type;counts[type]++;updateStats();idx++;renderCard();}
-function updateStats(){document.getElementById('s-done').textContent=counts.done;document.getElementById('s-ok').textContent=counts.ok;document.getElementById('s-hard').textContent=counts.hard;}
-function showComplete(){document.getElementById('card').style.display='none';document.getElementById('btns').style.display='none';document.getElementById('section-label').textContent='';document.getElementById('counter').textContent='';document.querySelector('.flip-hint').textContent='';renderDots();const doneW=cards.filter((_,i)=>results[i]==='done').map(c=>c.word);const okW=cards.filter((_,i)=>results[i]==='ok').map(c=>c.word);const hardW=cards.filter((_,i)=>results[i]==='hard').map(c=>c.word);const s=document.createElement('div');s.style.cssText='width:100%;max-width:420px;background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:1.6rem 1.4rem;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:1rem;';s.innerHTML='<div style="font-size:15px;font-weight:600;text-align:center;margin-bottom:1.2rem;">세션 완료 ✓</div><div style="display:flex;gap:8px;justify-content:center;margin-bottom:1.2rem;"><div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#F0FBF6;"><div style="font-size:22px;font-weight:600;color:#1D9E75;">'+counts.done+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">암기 완료</div></div><div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#EBF3FD;"><div style="font-size:22px;font-weight:600;color:#378ADD;">'+counts.ok+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">애매</div></div><div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#FEF0F0;"><div style="font-size:22px;font-weight:600;color:#E24B4A;">'+counts.hard+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">복습 필요</div></div></div>'+(hardW.length?'<div style="margin-bottom:0.6rem;"><span style="font-size:11px;font-weight:600;color:#E24B4A;">복습 필요 </span><span style="font-size:12px;color:#666;">'+hardW.join(', ')+'</span></div>':'')+(okW.length?'<div style="margin-bottom:0.6rem;"><span style="font-size:11px;font-weight:600;color:#378ADD;">애매 </span><span style="font-size:12px;color:#666;">'+okW.join(', ')+'</span></div>':'')+(doneW.length?'<div style="margin-bottom:1.2rem;"><span style="font-size:11px;font-weight:600;color:#1D9E75;">암기 완료 </span><span style="font-size:12px;color:#666;">'+doneW.join(', ')+'</span></div>':'<div style="margin-bottom:1.2rem;"></div>')+'<div style="display:flex;gap:8px;"><button onclick="copyResult()" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:#fff;font-size:13px;color:#666;cursor:pointer;">결과 복사</button><button onclick="nextStep()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#222;color:#fff;font-size:13px;font-weight:500;cursor:pointer;">다음 단계 →</button></div>';document.querySelector('.card-area').insertAdjacentElement('afterend',s);window._r='플래시카드 결과 — 암기완료:'+counts.done+'개('+(doneW.join(',')||'없음')+') / 애매:'+counts.ok+'개('+(okW.join(',')||'없음')+') / 복습필요:'+counts.hard+'개('+(hardW.join(',')||'없음')+')'; }
-function copyResult(){navigator.clipboard.writeText(window._r).then(()=>alert('복사 완료. Claude 채팅창에 붙여넣기 해주세요.'));}
-function nextStep(){navigator.clipboard.writeText(window._r+'\n\n다음 단계로 넘어가겠습니다.').then(()=>alert('복사 완료. Claude 채팅창에 붙여넣기 해주세요.')).catch(()=>alert('결과: '+window._r));}
+
+function flip(){
+  const cardEl=document.getElementById('card');
+  flipped=!flipped;
+  if(flipped){
+    cardEl.classList.add('flipped');
+    document.getElementById('btns').style.display='flex';
+  } else {
+    cardEl.classList.remove('flipped');
+    document.getElementById('btns').style.display='none';
+  }
+}
+
+function prev(e){
+  if(e) e.stopPropagation();
+  if(idx===0) return;
+  const pr=results[idx-1];
+  if(pr && pr!==cards[idx-1].status){ counts[pr]=Math.max(0,counts[pr]-1); updateStats(); }
+  results[idx-1]=cards[idx-1].status;
+  idx--;
+  renderCard();
+}
+
+function mark(type){
+  results[idx]=type;
+  counts[type]++;
+  updateStats();
+  idx++;
+  renderCard();
+}
+
+function updateStats(){
+  document.getElementById('s-done').textContent=counts.done;
+  document.getElementById('s-ok').textContent=counts.ok;
+  document.getElementById('s-hard').textContent=counts.hard;
+}
+
+function showComplete(){
+  document.getElementById('card').style.display='none';
+  document.getElementById('btns').style.display='none';
+  document.getElementById('section-label').textContent='';
+  document.getElementById('counter').textContent='';
+  document.querySelector('.flip-hint').textContent='';
+  renderDots();
+  const doneW=cards.filter((_,i)=>results[i]==='done').map(c=>c.word);
+  const okW=cards.filter((_,i)=>results[i]==='ok').map(c=>c.word);
+  const hardW=cards.filter((_,i)=>results[i]==='hard').map(c=>c.word);
+  const s=document.createElement('div');
+  s.style.cssText='width:100%;max-width:420px;background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:1.6rem 1.4rem;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:1rem;';
+  s.innerHTML=
+    '<div style="font-size:15px;font-weight:600;text-align:center;margin-bottom:1.2rem;">세션 완료 ✓</div>'+
+    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:1.2rem;">'+
+      '<div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#F0FBF6;"><div style="font-size:22px;font-weight:600;color:#1D9E75;">'+counts.done+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">암기 완료</div></div>'+
+      '<div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#EBF3FD;"><div style="font-size:22px;font-weight:600;color:#378ADD;">'+counts.ok+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">애매</div></div>'+
+      '<div style="flex:1;text-align:center;padding:0.7rem;border-radius:10px;background:#FEF0F0;"><div style="font-size:22px;font-weight:600;color:#E24B4A;">'+counts.hard+'</div><div style="font-size:10px;color:#aaa;margin-top:2px;">복습 필요</div></div>'+
+    '</div>'+
+    (hardW.length?'<div style="margin-bottom:0.6rem;"><span style="font-size:11px;font-weight:600;color:#E24B4A;">복습 필요 </span><span style="font-size:12px;color:#666;">'+hardW.join(', ')+'</span></div>':'')+
+    (okW.length?'<div style="margin-bottom:0.6rem;"><span style="font-size:11px;font-weight:600;color:#378ADD;">애매 </span><span style="font-size:12px;color:#666;">'+okW.join(', ')+'</span></div>':'')+
+    (doneW.length?'<div style="margin-bottom:1.2rem;"><span style="font-size:11px;font-weight:600;color:#1D9E75;">암기 완료 </span><span style="font-size:12px;color:#666;">'+doneW.join(', ')+'</span></div>':'<div style="margin-bottom:1.2rem;"></div>')+
+    '<div style="display:flex;gap:8px;">'+
+      '<button onclick="copyResult()" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:#fff;font-size:13px;color:#666;cursor:pointer;">결과 복사</button>'+
+      '<button onclick="nextStep()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#222;color:#fff;font-size:13px;font-weight:500;cursor:pointer;">다음 단계 →</button>'+
+    '</div>';
+  document.querySelector('.card-area').insertAdjacentElement('afterend',s);
+  window._r='플래시카드 결과 — 암기완료:'+counts.done+'개('+(doneW.join(',')||'없음')+') / 애매:'+counts.ok+'개('+(okW.join(',')||'없음')+') / 복습필요:'+counts.hard+'개('+(hardW.join(',')||'없음')+')';
+}
+
+function copyResult(){ navigator.clipboard.writeText(window._r).then(()=>alert('복사 완료. Claude 채팅창에 붙여넣기 해주세요.')); }
+function nextStep(){ navigator.clipboard.writeText(window._r+'\n\n다음 단계로 넘어가겠습니다.').then(()=>alert('복사 완료. Claude 채팅창에 붙여넣기 해주세요.')).catch(()=>alert('결과: '+window._r)); }
+
 renderCard();
 </script>
 </body>
 </html>
 ```
 
-앞면: 단어 🔊 / 뒷면: 예문 🔊 — 둘 다 재생됩니다. GitHub에 붙여넣고 완료되면 알려주세요.
+GitHub index.html에 붙여넣고 완료되면 알려주세요.
