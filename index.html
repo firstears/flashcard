@@ -39,6 +39,9 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 .stat-label { font-size: 10px; color: #bbb; margin-top: 2px; }
 .flip-hint { font-size: 11px; color: #ddd; text-align: center; margin-bottom: 0.8rem; }
 .loading { font-size: 14px; color: #bbb; margin-top: 3rem; }
+.btn-audio { background: none; border: none; cursor: pointer; font-size: 20px; padding: 4px 8px; color: #aaa; transition: color 0.15s; margin-top: 8px; }
+.btn-audio:hover { color: #378ADD; }
+.btn-audio.playing { color: #378ADD; }
 </style>
 </head>
 <body>
@@ -69,7 +72,16 @@ h2 { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 1rem; letter
 let idx=0, results=cards.map(c=>c.status), flipped=false, counts={done:0,ok:0,hard:0};
 function posTagHTML(c){let h='<div class="tags">';if(c.status==='hard')h+='<span class="tag hard">복습 필요</span>';else if(c.status==='ok')h+='<span class="tag ok">애매</span>';else h+='<span class="tag new">신규</span>';h+='<span class="tag pos">'+c.pos+'</span>';if(c.vtype==='vi')h+='<span class="tag vi">자동사</span>';else if(c.vtype==='vt')h+='<span class="tag vt">타동사</span>';else if(c.vtype==='vi/vt')h+='<span class="tag vi-vt">자·타동사</span>';h+='</div>';return h;}
 function renderDots(){const p=document.getElementById('progress');p.innerHTML='';cards.forEach((_,i)=>{const d=document.createElement('div');d.className='dot';if(i===idx)d.classList.add('current');else if(results[i]==='done')d.classList.add('done');else if(results[i]==='hard')d.classList.add('hard');else if(results[i]==='ok')d.classList.add('ok');p.appendChild(d);});}
-function renderCard(){if(idx>=cards.length){showComplete();return;}const cardEl=document.getElementById('card');cardEl.style.visibility='hidden';cardEl.style.transition='none';cardEl.classList.remove('flipped');flipped=false;document.getElementById('btns').style.display='none';requestAnimationFrame(()=>{cardEl.style.transition='';cardEl.style.visibility='visible';});const c=cards[idx];document.getElementById('counter').textContent=(idx+1)+' / '+cards.length;document.getElementById('section-label').textContent=c.status==='hard'?'복습 필요 — 집중 구간':c.status==='ok'?'애매 — 확인 구간':'신규';document.getElementById('front').innerHTML=posTagHTML(c)+'<div class="word">'+c.word+'</div><div class="phonetic">'+c.phonetic+'</div>';const ex=c.ex.split('\n');document.getElementById('back').innerHTML=posTagHTML(c)+'<div class="def-ko">'+c.def+'</div><div class="def-en">'+c.enDef+'</div><div class="example">'+ex[0]+'<br><span class="ko">'+(ex[1]||'')+'</span></div>';renderDots();}
+function speak(word){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = 'en-US'; u.rate = 0.9;
+  const btn = document.getElementById('audio-btn');
+  if(btn){ btn.classList.add('playing'); u.onend = ()=>btn.classList.remove('playing'); }
+  window.speechSynthesis.speak(u);
+}
+function renderCard(){if(idx>=cards.length){showComplete();return;}const cardEl=document.getElementById('card');cardEl.style.visibility='hidden';cardEl.style.transition='none';cardEl.classList.remove('flipped');flipped=false;document.getElementById('btns').style.display='none';requestAnimationFrame(()=>{cardEl.style.transition='';cardEl.style.visibility='visible';});const c=cards[idx];document.getElementById('counter').textContent=(idx+1)+' / '+cards.length;document.getElementById('section-label').textContent=c.status==='hard'?'복습 필요 — 집중 구간':c.status==='ok'?'애매 — 확인 구간':'신규';document.getElementById('front').innerHTML=posTagHTML(c)+'<div class="word">'+c.word+'</div><div class="phonetic">'+c.phonetic+'</div><button id="audio-btn" class="btn-audio" onclick="event.stopPropagation();speak(\''+c.word+'\')">🔊</button>';const ex=c.ex.split('\n');document.getElementById('back').innerHTML=posTagHTML(c)+'<div class="def-ko">'+c.def+'</div><div class="def-en">'+c.enDef+'</div><div class="example">'+ex[0]+'<br><span class="ko">'+(ex[1]||'')+'</span></div>';renderDots();}
 function flip(){flipped=!flipped;if(flipped){document.getElementById('card').classList.add('flipped');document.getElementById('btns').style.display='flex';}else{document.getElementById('card').classList.remove('flipped');document.getElementById('btns').style.display='none';}}
 function prev(e){if(e)e.stopPropagation();if(idx===0)return;const pr=results[idx-1];if(pr&&pr!==cards[idx-1].status){counts[pr]=Math.max(0,counts[pr]-1);updateStats();}results[idx-1]=cards[idx-1].status;idx--;renderCard();}
 function mark(type){results[idx]=type;counts[type]++;updateStats();idx++;renderCard();}
