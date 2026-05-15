@@ -25,14 +25,13 @@ async function main() {
       status: statusMap[p['상태']?.select?.name] || 'new',
       pos: p['품사']?.rich_text?.[0]?.plain_text || '',
       vtype: p['자타동사']?.select?.name || null,
-      def: p['한글뜻']?.rich_text?.[0]?.plain_text || '',
+      def: p['뜻']?.rich_text?.[0]?.plain_text || '',
       enDef: p['영어정의']?.rich_text?.[0]?.plain_text || '',
       ex: (p['예문']?.rich_text?.[0]?.plain_text || '') + '\n' + (p['예문번역']?.rich_text?.[0]?.plain_text || ''),
     };
   }).filter(c => c.word);
 
-  const output = `const cards = ${JSON.stringify(cards, null, 2)};\n`;
-  fs.writeFileSync('data.js', output);
+  fs.writeFileSync('data.js', `const cards = ${JSON.stringify(cards, null, 2)};\n`);
   console.log(`Generated ${cards.length} cards.`);
 }
 
