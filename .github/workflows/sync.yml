@@ -5,11 +5,16 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,11 +30,9 @@ jobs:
         run: node generate.js
 
       - name: Commit and push
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add data.js
           git diff --cached --quiet || git commit -m "Update flashcard data"
-          git push https://x-access-token:${GH_TOKEN}@github.com/firstears/flashcard.git
+          git push
