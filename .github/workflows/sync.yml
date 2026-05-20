@@ -1,12 +1,9 @@
-name: Sync Flashcard Data
+name: Sync Flashcards from Notion
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
-
-permissions:
-  contents: write
 
 jobs:
   sync:
@@ -28,11 +25,10 @@ jobs:
         run: node generate.js
 
       - name: Commit and push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add data.js
-          git diff --cached --quiet || git commit -m "Update flashcard data"
-          git push
+          git diff --staged --quiet || (git pull --rebase && git push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
