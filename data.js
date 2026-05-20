@@ -10,7 +10,7 @@ const cards=[
   {word:"compete",phonetic:"/kəmˈpiːt/",status:"hard",pos:"동사",vtype:"vi",def:"경쟁하다",enDef:"to strive against others for the same goal",ex:"The US and China compete for AI supremacy.\n미국과 중국은 AI 패권을 두고 경쟁한다."},
   {word:"semiconductor",phonetic:"/ˌsem.i.kənˈdʌk.tər/",status:"new",pos:"명사",vtype:null,def:"반도체",enDef:"a material that conducts electricity under certain conditions",ex:"Semiconductors are the new oil of the 21st century.\n반도체는 21세기의 새로운 석유다."},
   {word:"rare earth",phonetic:"/reər ɜːrθ/",status:"new",pos:"명사",vtype:null,def:"희토류",enDef:"a group of 17 metallic elements critical to modern technology",ex:"China controls over 60% of global rare earth processing.\n중국은 전 세계 희토류 가공의 60% 이상을 통제한다."},
-  {word:"export control",phonetic:"/ˈek.spɔːrt kənˈtrəʊl/",status:"new",pos:"명사",vtype:null,def:"수출 통제",enDef:"government restrictions on the sale of goods to foreign countries",ex:"US export controls limit China's access to advanced chips.\n미국의 수출 통제는 중국의 첨단 칩 접근을 제한한다."},
+  {word:"export control",phonetic:"/ˈek.spɔːrt kənˈtrəʊl/",status:"new",pos:"명사",vtype:null,def:"수출 통제",enDef:"government restrictions on the sale of goods abroad",ex:"US export controls limit China's access to advanced chips.\n미국의 수출 통제는 중국의 첨단 칩 접근을 제한한다."},
   {word:"supply chain",phonetic:"/səˈplaɪ tʃeɪn/",status:"new",pos:"명사",vtype:null,def:"공급망",enDef:"the network from raw materials to final product delivery",ex:"Taiwan's crisis would collapse the global supply chain.\n대만의 위기는 글로벌 공급망을 붕괴시킬 것이다."},
   {word:"invasion",phonetic:"/ɪnˈveɪ.ʒən/",status:"new",pos:"명사",vtype:null,def:"침공, 침략",enDef:"an act of entering another country by military force",ex:"A full invasion of Taiwan could cost $10 trillion globally.\n대만 전면 침공은 전 세계적으로 10조 달러의 비용이 든다."}
 ];
