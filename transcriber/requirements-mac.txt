@@ -1,0 +1,2 @@
+# Apple Silicon(M 시리즈) 전용: GPU 가속 전사
+mlx-whisper>=0.4

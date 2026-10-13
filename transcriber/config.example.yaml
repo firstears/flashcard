@@ -1,0 +1,21 @@
+# 복사해서 ~/.secondbrain-transcriber/config.yaml 로 저장한 뒤 경로만 고치십시오.
+# 줄 앞의 # 는 설명입니다. 값은 따옴표 없이 적어도 됩니다.
+
+# 폰에서 내보낸 MP3 가 도착하는 폴더 (Google Drive 데스크톱의 "전사받는곳" 폴더)
+inbox: "~/Library/CloudStorage/GoogleDrive-내계정@gmail.com/내 드라이브/전사받는곳"
+
+# Obsidian 보관함(Vault) 폴더
+vault: "~/Documents/SecondBrain"
+
+daily_dir: "Daily"        # 일일 노트가 쌓이는 폴더 (보관함 안)
+transcript_dir: "전사"     # 전사 원문 노트가 쌓이는 폴더 (보관함 안)
+
+language: ko              # 녹음 언어. 자동 감지는 빈 값("")
+engine: auto              # auto = M 시리즈면 GPU(mlx), 아니면 CPU(faster)
+model: auto               # auto = 권장 모델 (large-v3-turbo)
+
+stable_seconds: 15        # 파일 크기가 이 시간 동안 변하지 않아야 처리 시작
+poll_seconds: 10          # 폴더 확인 주기
+chunk_minutes: 20         # 긴 녹음을 나누는 단위(분). 무음 구간에서 자릅니다.
+after_done: move          # move = 처리 후 _done 폴더로 이동, keep = 그대로 둠
+max_attempts: 3           # 실패 시 재시도 횟수
