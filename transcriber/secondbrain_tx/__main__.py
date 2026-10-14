@@ -10,7 +10,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from . import __version__
+from . import __version__, autoconfig
 from .config import Config, ConfigError, load_config
 from .pipeline import drain, ingest, process_file
 from .state import State, file_sha256
@@ -103,6 +103,35 @@ def cmd_retry(cfg: Config) -> int:
     return 0
 
 
+def cmd_autoconfig(cfg_path: Path) -> int:
+    """Google Drive 폴더와 Obsidian 보관함을 찾아 설정 파일에 기록한다."""
+    if not cfg_path.exists():
+        print(f"설정 파일이 없습니다: {cfg_path}")
+        return 2
+    home = Path.home()
+    inbox_list = autoconfig.find_inbox_candidates(home)
+    vault_list = autoconfig.find_vault_candidates(home)
+    inbox = inbox_list[0] if inbox_list else None
+    vault = vault_list[0] if vault_list else None
+
+    if inbox:
+        print(f"[찾음] 받은편지함(Google Drive): {inbox}")
+        for other in inbox_list[1:]:
+            print(f"       다른 후보: {other}")
+    else:
+        print("[못 찾음] Google Drive 의 '전사받는곳' 또는 'Second Brain_test' 폴더")
+        print("          Mac 에 Google Drive 데스크톱 앱을 설치하고 로그인했는지 확인하십시오.")
+    if vault:
+        print(f"[찾음] Obsidian 보관함: {vault}")
+        for other in vault_list[1:]:
+            print(f"       다른 후보: {other}")
+    else:
+        print("[못 찾음] Obsidian 보관함: 기본 위치 ~/Documents/SecondBrain 을 새로 만들어 씁니다.")
+    autoconfig.update_config(cfg_path, inbox, vault)
+    print(f"설정 파일에 기록했습니다: {cfg_path}")
+    return 0
+
+
 def cmd_doctor(cfg: Config, deep: bool) -> int:
     problems = 0
 
@@ -176,6 +205,7 @@ def main(argv: list[str] | None = None) -> int:
     p_tr.add_argument("file", type=Path)
     sub.add_parser("status", help="작업 현황")
     sub.add_parser("retry", help="실패한 작업 다시 시도")
+    sub.add_parser("autoconfig", help="Drive 폴더와 Obsidian 보관함을 자동으로 찾아 설정에 기록")
     p_doc = sub.add_parser("doctor", help="설치와 설정 점검")
     p_doc.add_argument("--deep", action="store_true", help="모델까지 실제로 시험 (처음엔 다운로드)")
     args = parser.parse_args(argv)
@@ -185,6 +215,10 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(exc)
         return 2
+    if args.cmd == "autoconfig":
+        from .config import DEFAULT_CONFIG_PATH
+
+        return cmd_autoconfig(Path(args.config).expanduser() if args.config else DEFAULT_CONFIG_PATH)
     if args.cmd != "doctor":
         setup_logging(cfg)
     try:

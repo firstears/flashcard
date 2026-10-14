@@ -294,3 +294,48 @@ def test_long_silence_is_skipped_and_title_used(tmp_path):
     assert "speech_analyzed" in note
     stamps = re.findall(r"\[(\d\d):(\d\d):(\d\d)\]", note)
     assert int(stamps[0][1]) * 60 + int(stamps[0][2]) >= 59  # 첫 말은 약 60초 지점
+
+
+# ---------- 자동 설정 ----------
+
+def test_autoconfig_finds_drive_folder_and_vault(tmp_path, monkeypatch):
+    import unicodedata
+    from secondbrain_tx import autoconfig
+    from secondbrain_tx.config import load_config
+
+    home = tmp_path / "home"
+    drive = home / "Library" / "CloudStorage" / "GoogleDrive-a@b.com" / "내 드라이브"
+    # macOS 가 돌려줄 수 있는 자모 분리(NFD) 한글 이름으로 만든다
+    (drive / unicodedata.normalize("NFD", "전사받는곳")).mkdir(parents=True)
+    (drive / "Second Brain_test").mkdir()
+    old = home / "Documents" / "오래된볼트" / ".obsidian"
+    old.mkdir(parents=True)
+    new = home / "Documents" / "작업" / "SecondBrain" / ".obsidian"
+    new.mkdir(parents=True)
+    import os, time
+    os.utime(old, (time.time() - 99999, time.time() - 99999))
+
+    inbox = autoconfig.find_inbox_candidates(home)
+    assert [unicodedata.normalize("NFC", p.name) for p in inbox] == ["전사받는곳", "Second Brain_test"]
+    vaults = autoconfig.find_vault_candidates(home)
+    assert vaults[0].name == "SecondBrain" and len(vaults) == 2  # 최근 것이 앞
+
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(
+        (Path(__file__).parent.parent / "config.example.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    autoconfig.update_config(cfg_file, inbox[0], vaults[0])
+    cfg = load_config(cfg_file)
+    assert Path(cfg.inbox) == inbox[0] and Path(cfg.vault) == vaults[0]
+    assert cfg.language == "ko"  # 다른 설정은 그대로
+    assert "# 복사해서" in cfg_file.read_text(encoding="utf-8")  # 주석 보존
+
+
+def test_autoconfig_without_matches_changes_nothing(tmp_path):
+    from secondbrain_tx import autoconfig
+
+    home = tmp_path / "empty"
+    home.mkdir()
+    assert autoconfig.find_inbox_candidates(home) == []
+    assert autoconfig.find_vault_candidates(home) == []

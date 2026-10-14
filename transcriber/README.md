@@ -31,27 +31,22 @@ Obsidian 보관함에 노트로 저장합니다. 녹음 날짜의 일일 노트(
 
 ## 설치 (Mac, 최초 1회)
 
-터미널을 열고 아래를 순서대로 실행합니다.
+1. Google Drive 데스크톱 앱에서 받은편지함 폴더를 **미러링(오프라인 사용 가능)** 으로 설정합니다. (위 "Google Drive 준비")
+2. 터미널을 열고 `cd ` 까지 입력한 뒤 한 칸 띄우고, **이 `transcriber` 폴더를 터미널 창으로 끌어다 놓은 다음 Enter**.
+3. 아래 한 줄을 실행합니다.
 
 ```bash
-brew install ffmpeg          # 이미 있으면 생략
-cd transcriber               # 이 폴더로 이동
 bash install_mac.sh
 ```
 
-끝나면 안내문이 나옵니다. 안내대로:
+설치기가 알아서 하는 일: Homebrew 로 ffmpeg 와 파이썬 설치, 프로그램 설치,
+**Google Drive 폴더와 Obsidian 보관함 자동 탐지**, 점검, 받은편지함의 파일 시험 전사, 자동 실행 등록(y 입력 시).
 
-1. `open -e ~/.secondbrain-transcriber/config.yaml` 로 설정 파일을 열어 **inbox** 와 **vault** 경로를 고칩니다.
-2. 점검: `cd ~/.secondbrain-transcriber/app && ~/.secondbrain-transcriber/venv/bin/python -m secondbrain_tx doctor --deep`
-   - 처음 한 번은 전사 모델(약 1.5GB)을 내려받습니다.
-   - `[확인필요]` 줄이 있으면 그 아래 안내를 따릅니다. 결과 화면을 저에게 보여 주셔도 됩니다.
-3. 시험: MP3 하나로 직접 전사해 봅니다.
-   `~/.secondbrain-transcriber/venv/bin/python -m secondbrain_tx transcribe ~/Downloads/시험.mp3`
-4. 문제가 없으면 자동 실행을 켭니다. (Mac 을 켜면 항상 백그라운드로 동작)
-   `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.secondbrain.transcriber.plist`
-
-> Drive 나 Obsidian 폴더 접근 허가 창이 뜨면 **허용**을 누릅니다. 그래도 읽기 실패가 나오면
-> 시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한에 터미널을 추가합니다.
+- 처음 한 번은 전사 모델(약 1.5GB)을 내려받느라 몇 분 걸립니다.
+- 파일 접근 허가 창이 뜨면 **허용**을 누릅니다. 그래도 읽기 실패가 나오면
+  시스템 설정 -> 개인정보 보호 및 보안 -> 전체 디스크 접근 권한에 터미널을 추가한 뒤 다시 실행합니다.
+- 중간에 `[확인필요]` 가 나오면 그 화면을 복사해서 Claude 에게 보여 주십시오.
+- 경로가 맞지 않으면 `open -e ~/.secondbrain-transcriber/config.yaml` 로 `inbox`, `vault` 를 고칩니다.
 
 ## 평소 사용
 
