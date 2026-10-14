@@ -13,14 +13,16 @@ _TYPE_TAG = re.compile(r"^\s*(?:\[(수업|회의|설교|논문)\]|(수업|회의
 _BAD_CHARS = re.compile(r'[\\/:*?"<>|#^\[\]]')
 
 
-def recorded_at(path: Path) -> datetime:
-    """파일 이름의 날짜+시각(예: 2026-10-13 223939.mp3)을 녹음 시각으로 쓴다. 없으면 수정 시각."""
+def recorded_at(path: Path, tag_time: datetime | None = None) -> datetime:
+    """녹음 시각: 파일 이름의 날짜+시각(예: 2026-10-13 223939.mp3) -> 메타데이터 -> 수정 시각 순."""
     m = _RECORD_TS.search(path.name)
     if m:
         try:
             return datetime(*(int(g) for g in m.groups()))
         except ValueError:
             pass
+    if tag_time is not None:
+        return tag_time
     return datetime.fromtimestamp(path.stat().st_mtime)
 
 
@@ -58,6 +60,7 @@ def write_transcript_note(
     paragraphs: list[tuple[float, str]],
     engine_name: str,
     model: str,
+    active_seconds: float | None = None,
 ) -> tuple[Path, str]:
     """전사 노트를 보관함에 저장한다. 반환: (보관함 기준 상대 경로, 제목)."""
     stem = unicodedata.normalize("NFC", src.stem)
@@ -72,14 +75,16 @@ def write_transcript_note(
         full = cfg.vault_path / rel
 
     body = "\n\n".join(f"[{hms(t)}] {text}" for t, text in paragraphs) or "(인식된 음성이 없습니다)"
+    speech_line = f'speech_analyzed: "{hms(active_seconds)}"\n' if active_seconds is not None else ""
     text = (
         "---\n"
         f"created: {rec:%Y-%m-%dT%H:%M:%S}\n"
-        f"source: \"{src.name}\"\n"
+        f'source: "{src.name}"\n'
         f"type: {rtype}\n"
-        f"duration: \"{hms(duration)}\"\n"
+        f'duration: "{hms(duration)}"\n'
+        f"{speech_line}"
         f"engine: {engine_name}\n"
-        f"model: \"{model}\"\n"
+        f'model: "{model}"\n'
         f"sha: {sha[:8]}\n"
         "tags: [전사]\n"
         "---\n"

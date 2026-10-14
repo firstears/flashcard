@@ -17,5 +17,7 @@ model: auto               # auto = 권장 모델 (large-v3-turbo)
 stable_seconds: 15        # 파일 크기가 이 시간 동안 변하지 않아야 처리 시작
 poll_seconds: 10          # 폴더 확인 주기
 chunk_minutes: 20         # 긴 녹음을 나누는 단위(분). 무음 구간에서 자릅니다.
+silence_db: -35          # 이보다 조용하면 무음. 주변 소음이 큰 곳의 녹음은 -30 으로 올려 보십시오.
+skip_silence_seconds: 8   # 이 시간 이상 이어지는 무음은 전사하지 않고 건너뜀 (시간 절약, 환각 방지)
 after_done: move          # move = 처리 후 _done 폴더로 이동, keep = 그대로 둠
 max_attempts: 3           # 실패 시 재시도 횟수

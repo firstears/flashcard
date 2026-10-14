@@ -220,3 +220,77 @@ def test_failure_retries_then_marks_failed(tmp_path):
     assert row["status"] == "failed" and row["attempts"] == cfg.max_attempts
     assert "길이" in row["error"] or "오디오" in row["error"]
     assert state.retry_failed() == 1
+
+
+# ---------- 긴 무음 건너뛰기, 녹음 시각 결정 ----------
+
+def make_pattern(path: Path, pattern: list[tuple[str, int]], creation_time: str | None = None) -> None:
+    """pattern: [("t", 초), ("s", 초), ...]  t=소리, s=무음."""
+    work = path.parent.parent / "work"
+    work.mkdir(exist_ok=True)
+    inputs: list[str] = []
+    for i, (kind, sec) in enumerate(pattern):
+        src = (f"sine=frequency=440:duration={sec}" if kind == "t"
+               else f"anullsrc=r=44100:cl=mono:d={sec}")
+        inputs += ["-f", "lavfi", "-t", str(sec), "-i", src]
+    cmd = ["ffmpeg", "-nostdin", "-v", "error", "-y", *inputs, "-filter_complex",
+           f"concat=n={len(pattern)}:v=0:a=1", "-c:a", "libmp3lame"]
+    if creation_time:
+        cmd += ["-metadata", f"creation_time={creation_time}"]
+    subprocess.run([*cmd, str(path)], check=True)
+
+
+def test_plan_speech_chunks_skips_long_silence():
+    # 46분 중 앞 30분은 무음, 말은 약 2분: 말이 있는 구간만 남는다
+    silences = [(0.0, 1850.0), (1900.0, 1901.0), (1960.0, float("inf"))]
+    chunks = audio.plan_speech_chunks(2778.0, silences, 1200.0)
+    assert len(chunks) == 1
+    start, end = chunks[0]
+    assert 1849 <= start <= 1850 and 1960 <= end <= 1961
+    # 전부 무음이면 처리할 구간이 없다
+    assert audio.plan_speech_chunks(100.0, [(0.0, float("inf"))], 60.0) == []
+    # 말이 두 덩어리면 두 구간
+    two = audio.plan_speech_chunks(300.0, [(0.0, 50.0), (80.0, 200.0), (230.0, float("inf"))], 600.0)
+    assert len(two) == 2
+
+
+def test_recorded_at_priority(tmp_path):
+    f = tmp_path / "AI 비서 일정 브리핑.mp3"
+    f.write_bytes(b"x")
+    tag = notes.datetime(2026, 10, 14, 8, 19, 0)
+    assert notes.recorded_at(f, tag) == tag  # 이름에 시각이 없으면 메타데이터
+    named = tmp_path / "2026-10-13 223939.mp3"
+    named.write_bytes(b"x")
+    assert notes.recorded_at(named, tag).day == 13  # 이름의 시각이 우선
+    assert notes.recorded_at(f, None).year >= 2026  # 둘 다 없으면 수정 시각
+
+
+@needs_ffmpeg
+def test_probe_creation_time_reads_metadata(tmp_path):
+    (tmp_path / "inbox").mkdir()
+    f = tmp_path / "inbox" / "제목만있는파일.mp3"
+    make_pattern(f, [("t", 2)], creation_time="2026-10-14T08:19:00Z")
+    got = audio.probe_creation_time(f)
+    expected = notes.datetime.fromisoformat("2026-10-14T08:19:00+00:00").astimezone().replace(tzinfo=None)
+    assert got == expected
+
+
+@needs_ffmpeg
+def test_long_silence_is_skipped_and_title_used(tmp_path):
+    cfg = make_cfg(tmp_path)
+    cfg.inbox_path.mkdir(parents=True)
+    src = cfg.inbox_path / "AI 비서 일정 브리핑.mp3"  # 이름에 날짜가 없는 젠스파크식 제목
+    make_pattern(src, [("s", 60), ("t", 20), ("s", 60), ("t", 10)], creation_time="2026-10-14T08:19:00Z")
+    state = State(cfg.state_path / "state.db")
+    scanner = InboxScanner(cfg.inbox_path, 0)
+    ingest(cfg, state, scanner)
+    ingest(cfg, state, scanner)
+    engine = FakeEngine()
+    assert drain(cfg, state, lambda: engine) == 1
+    assert engine.calls == 2  # 소리가 있는 두 덩어리만 전사
+    note_path = next((cfg.vault_path / "전사").rglob("*.md"))
+    note = note_path.read_text(encoding="utf-8")
+    assert "# AI 비서 일정 브리핑" in note
+    assert "speech_analyzed" in note
+    stamps = re.findall(r"\[(\d\d):(\d\d):(\d\d)\]", note)
+    assert int(stamps[0][1]) * 60 + int(stamps[0][2]) >= 59  # 첫 말은 약 60초 지점

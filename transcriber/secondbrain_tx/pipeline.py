@@ -18,14 +18,22 @@ log = logging.getLogger("secondbrain_tx")
 
 def process_file(cfg: Config, engine, path: Path, sha: str) -> Path:
     """오디오 한 개를 전사해 노트로 저장한다. 반환: 전사 노트의 보관함 상대 경로."""
-    rec = notes.recorded_at(path)
+    rec = notes.recorded_at(path, audio.probe_creation_time(path))
     duration = audio.probe_duration(path)
     target = max(60.0, cfg.chunk_minutes * 60)
-    silences = audio.detect_silences(path) if duration > target * 1.25 else []
-    chunks = audio.plan_chunks(duration, silences, target)
+    # 2분 이하의 짧은 녹음은 통째로 처리하고, 긴 녹음은 긴 무음을 건너뛰고 말이 있는 구간만 전사한다.
+    if duration > 120:
+        silences = audio.detect_silences(path, cfg.silence_db)
+        chunks = audio.plan_speech_chunks(duration, silences, target, cfg.skip_silence_seconds)
+    else:
+        chunks = [(0.0, duration)]
+    active = sum(end - start for start, end in chunks)
     prompt = postprocess.load_glossary_prompt(cfg.glossary_path)
     corrections = postprocess.load_corrections(cfg.corrections_path)
-    log.info("전사 시작: %s (%s, %d개 구간)", path.name, notes.hms(duration), len(chunks))
+    log.info(
+        "전사 시작: %s (전체 %s, 말이 있는 구간 %s, %d개 구간)",
+        path.name, notes.hms(duration), notes.hms(active), len(chunks),
+    )
 
     segments: list[Segment] = []
     tmp_root = cfg.state_path / "tmp"
@@ -44,7 +52,7 @@ def process_file(cfg: Config, engine, path: Path, sha: str) -> Path:
     paragraphs = postprocess.group_paragraphs(segments)
     model = getattr(engine, "model", None) or getattr(engine, "model_name", "") or ""
     note_rel, title = notes.write_transcript_note(
-        cfg, path, sha, rec, duration, paragraphs, engine.name, model
+        cfg, path, sha, rec, duration, paragraphs, engine.name, model, active
     )
     notes.append_daily(cfg, rec, title, note_rel, duration, paragraphs, sha)
     log.info("저장 완료: %s", note_rel)

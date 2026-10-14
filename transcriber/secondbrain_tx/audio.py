@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -53,7 +55,36 @@ def detect_silences(path: Path, noise_db: int = -35, min_len: float = 0.6) -> li
         if m and start is not None:
             silences.append((start, float(m.group(1))))
             start = None
+    if start is not None:  # 파일이 무음으로 끝난 경우
+        silences.append((start, float("inf")))
     return silences
+
+
+def probe_creation_time(path: Path) -> datetime | None:
+    """오디오 파일 메타데이터(creation_time)에서 녹음 시각을 읽는다. 없으면 None."""
+    res = _run(
+        [
+            "ffprobe", "-v", "error", "-show_entries",
+            "format_tags=creation_time:stream_tags=creation_time", "-of", "json", str(path),
+        ]
+    )
+    try:
+        data = json.loads(res.stdout or "{}")
+    except ValueError:
+        return None
+    candidates = list((data.get("format") or {}).get("tags", {}).values())
+    for stream in data.get("streams") or []:
+        candidates += list((stream.get("tags") or {}).values())
+    for raw in candidates:
+        try:
+            dt = datetime.fromisoformat(str(raw).strip().replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.tzinfo is not None:
+            dt = dt.astimezone().replace(tzinfo=None)
+        if 2000 <= dt.year <= datetime.now(timezone.utc).year + 1:
+            return dt
+    return None
 
 
 def plan_chunks(
@@ -75,6 +106,34 @@ def plan_chunks(
         chunks.append((cursor, cut))
         cursor = cut
     chunks.append((cursor, duration))
+    return chunks
+
+
+def plan_speech_chunks(
+    duration: float,
+    silences: list[tuple[float, float]],
+    target: float,
+    skip_min: float = 8.0,
+    pad: float = 0.5,
+) -> list[tuple[float, float]]:
+    """skip_min 초 이상 이어지는 무음은 건너뛰고, 말이 있는 구간만 target 초 단위로 나눈다."""
+    long_sil = sorted((s, e) for s, e in silences if e - s >= skip_min)
+    active: list[tuple[float, float]] = []
+    cursor = 0.0
+    for s, e in long_sil:
+        if s > cursor:
+            active.append((cursor, min(s, duration)))
+        cursor = max(cursor, e)
+    if cursor < duration:
+        active.append((cursor, duration))
+    chunks: list[tuple[float, float]] = []
+    for a, b in active:
+        a2, b2 = max(0.0, a - pad), min(duration, b + pad)
+        if b2 - a2 < 1.0:
+            continue
+        inner = [(max(s, a2) - a2, min(e, b2) - a2) for s, e in silences if e > a2 and s < b2]
+        for cs, ce in plan_chunks(b2 - a2, inner, target):
+            chunks.append((a2 + cs, a2 + ce))
     return chunks
 
 

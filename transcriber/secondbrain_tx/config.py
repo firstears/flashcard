@@ -24,6 +24,8 @@ class Config:
     stable_seconds: float = 15
     poll_seconds: float = 10
     chunk_minutes: float = 20
+    silence_db: float = -35  # 이보다 조용하면 무음으로 본다 (주변 소음이 크면 -30 등으로 조정)
+    skip_silence_seconds: float = 8  # 이 시간 이상 이어지는 무음은 전사하지 않고 건너뜀
     after_done: str = "move"  # move | keep
     max_attempts: int = 3
 
